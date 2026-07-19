@@ -5,6 +5,7 @@ import express from 'express';
 import cors from 'cors';
 import authRoutes from './routes/auth';
 import projectRoutes from './routes/projects';
+import { ensureBucket } from './storage';
 
 
 
@@ -23,6 +24,7 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  await ensureBucket();
   console.log(`GitCreative API running on http://localhost:${PORT}`);
 });
