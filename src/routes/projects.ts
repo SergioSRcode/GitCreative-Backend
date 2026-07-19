@@ -70,9 +70,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 router.post(`/:id/commits`, async (req: AuthRequest, res: Response) => {
   const { id: projectId } = req.params;
   if (Array.isArray(projectId)) return; // ensures projectId is a string
-
-  const { message, branchId, parentCommitId } = req.body;
-
+  const { message, branchId, parentCommitId } = req.query as Record<string, string>;
   // the raw .gitcreative binary is sent as a req body
   // express.raw() middleware parses it -> wired in index.ts
   const snapshotData = req.body as Buffer;
