@@ -6,6 +6,11 @@ import { v4 as uuidv4 } from 'uuid';
 
 // router entry point /api/auth/
 const router = Router();
+router.use((req, res, next) => {
+  console.log('Projects router hit:', req.method, req.path)
+  console.log('Authorization header:', req.headers.authorization?.slice(0, 30))
+  next()
+})
 // applies requireAuth to all routes in this file
 router.use(requireAuth);
 
@@ -25,7 +30,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 
     // creates the project
     await pool.query(
-      `INSERT INTO projects (id, user,id, name, width, height)
+      `INSERT INTO projects (id, user_id, name, width, height)
        VALUES ($1, $2, $3, $4, $5)`,
        [projectId, req.userId, name, width, height]
     );
