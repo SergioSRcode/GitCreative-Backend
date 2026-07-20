@@ -195,4 +195,60 @@ router.get(`/:projectId/commits/:commitId/snapshot`, async (req: AuthRequest, re
   }
 });
 
+// ------------------------------
+// GET /api/projects/:id/branches
+// ------------------------------
+router.get('/:id/branches', async (req: AuthRequest, res: Response) => {
+  const { id: projectId } = req.params;
+
+  try {
+    const projectCheck = await pool.query(
+      `SELECT id FROM projects WHERE id = $1 AND user_id = $2`,
+      [projectId, req.userId]
+    );
+
+    if (projectCheck.rows.length === 0) {
+      res.status(404).json({ error: 'project not found' });
+      return;
+    }
+
+    const result = await pool.query(
+      `SELECT id, name, head_commit_id
+       FROM branches
+       WHERE project_id = $1
+       ORDER BY created_at ASC`,
+      [projectId]
+    );
+
+    res.json({ branches: result.rows });
+  } catch (err) {
+    console.error('List branches error: ', err);
+    res.status(500).json({ error: 'internal server error' });
+  }
+});
+
+// --------------------------------------------------------------------------------------------------
+// DELETE /api/projects/:id - deleting a project automatically cleans up all its commits and branches 
+// --------------------------------------------------------------------------------------------------
+router.delete('/:id', async (req: AuthRequest, res: Response) => {
+  const { id: projectId } = req.params;
+
+  try {
+    const result = await pool.query(
+      `DELETE FROM projects WHERE id = $1 AND user_id = $2 RETURNING id`,
+      [projectId, req.userId]
+    );
+
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'project not found' });
+      return;
+    }
+
+    res.json({ deleted: true });
+  } catch (err) {
+    console.error('Delete project error: ', err);
+    res.status(500).json({ error: 'internal server error' });
+  }
+});
+
 export default router
