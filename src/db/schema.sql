@@ -22,6 +22,7 @@ CREATE TABLE projects (
   name         TEXT NOT NULL,
   width        INTEGER NOT NULL,
   height       INTEGER NOT NULL,
+  last_active_branch_id UUID REFERENCES branches(id) ON DELETE SET NULL,
   created_at   TIMESTAMPTZ DEFAULT NOW(),
   updated_at   TIMESTAMPTZ DEFAULT NOW()
 );
