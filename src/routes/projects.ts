@@ -6,11 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 // router entry point /api/auth/
 const router = Router();
-router.use((req, res, next) => {
-  console.log('Projects router hit:', req.method, req.path)
-  console.log('Authorization header:', req.headers.authorization?.slice(0, 30))
-  next()
-})
+
 // applies requireAuth to all routes in this file
 router.use(requireAuth);
 
