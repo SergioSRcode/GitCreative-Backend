@@ -44,3 +44,11 @@ export async function downloadSnapshot(key: string): Promise<Buffer> {
     stream.on('error', reject);
   });
 }
+
+export async function uploadSnapshotToKey(key: string, data: Buffer): Promise<string> {
+  await minioClient.putObject(BUCKET, key, data, data.length, {
+    'Content-Type': 'application/octet-stream',
+  });
+
+  return key;
+}

@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { pool } from '../db';
-import { uploadSnapshot, downloadSnapshot } from '../storage';
+import { uploadSnapshot, downloadSnapshot, uploadSnapshotToKey } from '../storage';
 import { v4 as uuidv4 } from 'uuid';
 
 // router entry point /api/auth/
@@ -143,9 +143,9 @@ router.post(`/:id/commits`, async (req: AuthRequest, res: Response) => {
       [commitId, projectId, parentCommitId || null, message, snapshotKey]
     );
 
-    // updates branch HEAD to point to new commit
+    // updates branch HEAD to point to new commit, sets quick-saves to NULL
     await pool.query(
-      `UPDATE branches SET head_commit_id = $1 WHERE id = $2`,
+      `UPDATE branches SET head_commit_id = $1, current_snapshot_key = NULL WHERE id = $2`,
       [commitId, branchId]
     );
 
@@ -463,5 +463,81 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
     res.status(500).json({ error: 'internal server error' });
   }
 });
+
+// ------------------------------------------------------------------------------------------
+// PUT //api/projects/:id/branches/:branchId/save -> allow for quick saves (no history entry)
+// ------------------------------------------------------------------------------------------
+router.put('/:id/branches/:branchId/save', async (req: AuthRequest, res: Response) => {
+  const { id: projectId, branchId } = req.params;
+  const snapshotData = req.body as Buffer;
+
+  try {
+    const check = await pool.query(
+      `SELECT b.id FROM branches b
+       JOIN projects p ON p.id = b.project_id
+       WHERE b.id = $1 AND p.id = $2 AND p.user_id = $3`,
+      [branchId, projectId, req.userId]
+    );
+
+    if (check.rows.length === 0) {
+      res.status(404).json({ error: 'branch not found' });
+      return;
+    }
+
+    // reuses a stable key so repeated quick-saves overwrite in place rather than accumulating new objs in MinIO
+    const key = `snapshots/${projectId}/${branchId}_quicksave.gitcreative`;
+    await uploadSnapshotToKey(key, snapshotData);
+
+    await pool.query(
+      `UPDATE branches SET current_snapshot_key = $1 WHERE id = $2`,
+      [key, branchId]
+    );
+
+    res.json({ saved: true });
+  } catch (err) {
+    console.error('Quick save error: ', err);
+    res.status(500).json({ error: 'internal server error' });
+  }
+});
+
+// ----------------------------------------------------------------------
+// GET /api/projects/:id/branches/:branchId/current - loads current state
+// loads quick-save if present, else the branch HEAD commit
+// ----------------------------------------------------------------------
+router.get('/:id/branches/:branchId/current', async (req: AuthRequest, res: Response) => {
+  const { id: projectId, branchId } = req.params;
+
+  try {
+    const result = await pool.query(
+      `SELECT b.current_snapshot_key, c.snapshot_key as head_snapshot_key
+       FROM branches b
+       JOIN projects p ON p.id = b.project_id
+       LEFT JOIN commits c ON c.id = b.head_commit_id
+       WHERE b.id = $1 AND p.id = $2 AND p.user_id = $3`,
+      [branchId, projectId, req.userId]
+    );
+
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'branch not found' });
+      return;
+    }
+
+    const { current_snapshot_key, head_snapshot_key } = result.rows[0];
+    const key = current_snapshot_key || head_snapshot_key;
+
+    if (!key) {
+      res.status(404).json({ error: 'no snapshot available' });
+      return;
+    }
+
+    const data = await downloadSnapshot(key);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.send(data);
+  } catch (err) {
+    console.error('Load current state error: ', err);
+    res.status(500).json({ error: 'internal server error' });
+  }
+});
+
 
 export default router

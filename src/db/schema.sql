@@ -43,12 +43,13 @@ CREATE TABLE commits (
 -- BRANCHES  (named pointers to commits)
 -- ─────────────────────────────────────────
 CREATE TABLE branches (
-  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  project_id   UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-  name         TEXT NOT NULL,
-  head_commit_id UUID REFERENCES commits(id),  -- the latest commit on this branch
-  created_at   TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(project_id, name)                     -- no duplicate branch names per project
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id     UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  name           TEXT NOT NULL,
+  head_commit_id UUID REFERENCES commits(id),
+  current_snapshot_key TEXT,
+  created_at     TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(project_id, name)
 );
 
 -- ─────────────────────────────────────────
