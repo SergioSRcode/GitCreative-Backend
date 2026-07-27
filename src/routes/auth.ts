@@ -18,8 +18,18 @@ function signToken(userId: string): string {
 }
 
 router.post('/register', registerLimiter, async (req: Request, res: Response) => {
-  const { email, password, displayName } =  req.body;
+  const { email, password, displayName, website } =  req.body;  // website === HP, must be falsy
 
+  if (website) {
+    // Silently pretend success
+    res.status(201).json({
+      token: 'fake-token-for-bots',
+      user: { id: 'fake', email, displayName },
+    });
+
+    return;
+  }
+  
   // input validation
   if (!email || !password || !displayName) {
     res.status(400).json({ error: 'email, password and displayName are required'});
