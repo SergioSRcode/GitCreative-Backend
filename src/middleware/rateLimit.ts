@@ -1,5 +1,7 @@
 import rateLimit from 'express-rate-limit';
 
+const isTestEnv = process.env.NODE_ENV === 'test';
+
 // Registration: strict — signups should be rare relative to normal traffic
 export const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,  // 1 hour window
@@ -7,6 +9,7 @@ export const registerLimiter = rateLimit({
   message: { error: 'Too many registration attempts. Please try again later.' },
   standardHeaders: true,      // adds RateLimit-* headers so clients can see their remaining quota
   legacyHeaders: false,       // disables the older X-RateLimit-* headers, standardHeaders is the modern replacement
+  skip: () => isTestEnv,  // bypass entirely when running tests
 });
 
 // Login: slightly more lenient as actual humans mistype passwords sometimes
@@ -16,4 +19,5 @@ export const loginLimiter = rateLimit({
   message: { error: 'Too many login attempts. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => isTestEnv,  // bypass entirely when running tests
 });
