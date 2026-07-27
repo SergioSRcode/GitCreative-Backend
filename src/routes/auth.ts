@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { pool } from '../db';
+import { registerLimiter, loginLimiter } from '../middleware/rateLimit';
 
 // router entry point /api/auth/
 const router = Router();
@@ -16,7 +17,7 @@ function signToken(userId: string): string {
   )
 }
 
-router.post('/register', async (req: Request, res: Response) => {
+router.post('/register', registerLimiter, async (req: Request, res: Response) => {
   const { email, password, displayName } =  req.body;
 
   // input validation
@@ -84,7 +85,7 @@ router.post('/register', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', loginLimiter, async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
