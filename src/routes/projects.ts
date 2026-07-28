@@ -570,5 +570,25 @@ router.patch('/:id', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// GET /api/projects/:id - fetch a single project
+router.get('/:id', async (req: AuthRequest, res: Response) => {
+  const { id: projectId } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT id, name, width, height, created_at, updated_at
+       FROM projects WHERE id = $1 AND user_id = $2`,
+      [projectId, req.userId]
+    );
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'project not found' });
+      return;
+    }
+    res.json({ project: result.rows[0] });
+  } catch (err) {
+    console.error('Get project error:', err);
+    res.status(500).json({ error: 'internal server error' });
+  }
+})
+
 
 export default router
