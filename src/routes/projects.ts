@@ -552,7 +552,7 @@ router.patch('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const result = await pool.query(
       `UPDATE projects
-       SET name = $1, updated_at = NOW()
+       SET name = $1
        WHERE id = $2 AND user_id = $3
        RETURNING id, name`,
       [name.trim(), projectId, req.userId]
