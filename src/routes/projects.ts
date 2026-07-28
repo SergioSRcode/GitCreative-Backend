@@ -539,5 +539,36 @@ router.get('/:id/branches/:branchId/current', async (req: AuthRequest, res: Resp
   }
 });
 
+// PATCH /api/projects/:id — rename a project
+router.patch('/:id', async (req: AuthRequest, res: Response) => {
+  const { id: projectId } = req.params;
+  const { name } = req.body;
+
+  if (!name || !name.trim()) {
+    res.status(400).json({ error: 'name is required' });
+    return;
+  }
+
+  try {
+    const result = await pool.query(
+      `UPDATE projects
+       SET name = $1, updated_at = NOW()
+       WHERE id = $2 AND user_id = $3
+       RETURNING id, name`,
+      [name.trim(), projectId, req.userId]
+    );
+
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'project not found' });
+      return;
+    }
+
+    res.json({ project: result.rows[0] })
+  } catch (err) {
+    console.error('Rename project error:', err);
+    res.status(500).json({ error: 'internal server error' });
+  }
+});
+
 
 export default router
