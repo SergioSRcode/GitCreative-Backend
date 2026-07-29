@@ -21,3 +21,20 @@ export const loginLimiter = rateLimit({
   legacyHeaders: false,
   skip: () => isTestEnv,  // bypass entirely when running tests
 });
+
+export const commitLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,  // 30 commits per minute per IP — generous for real use, blocks scripted abuse
+  message: { error: 'Too many commits — please slow down.' },
+  standardHeaders: true, legacyHeaders: false,
+  skip: () => isTestEnv,
+});
+
+export const projectCreateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,  // generous — 20 new projects per hour is plenty for real use
+  message: { error: 'Too many projects created — please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => isTestEnv,
+});

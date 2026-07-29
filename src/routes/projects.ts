@@ -3,6 +3,7 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 import { pool } from '../db';
 import { uploadSnapshot, downloadSnapshot, uploadSnapshotToKey } from '../storage';
 import { v4 as uuidv4 } from 'uuid';
+import { commitLimiter, projectCreateLimiter } from '../middleware/rateLimit';
 
 // router entry point /api/auth/
 const router = Router();
@@ -13,7 +14,7 @@ router.use(requireAuth);
 // ----------------------------------------
 // POST /api/projects - creates new project
 // ----------------------------------------
-router.post('/', async (req: AuthRequest, res: Response) => {
+router.post('/', projectCreateLimiter, async (req: AuthRequest, res: Response) => {
   const { name, width, height } = req.body;
   if (!name || !width || !height) {
     res.status(400).json({ error: 'name, width and height are required' });
@@ -105,7 +106,7 @@ router.patch('/:id/lastBranch', async (req: AuthRequest, res: Response) => {
 // -------------------------------------------------
 // POST /api/projects/:id/commits - creates a commit
 // -------------------------------------------------
-router.post(`/:id/commits`, async (req: AuthRequest, res: Response) => {
+router.post(`/:id/commits`, commitLimiter, async (req: AuthRequest, res: Response) => {
   const { id: projectId } = req.params;
   if (Array.isArray(projectId)) return; // ensures projectId is a string
   const { message, branchId, parentCommitId } = req.query as Record<string, string>;
