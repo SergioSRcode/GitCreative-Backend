@@ -2,7 +2,7 @@
 
 REST API and storage layer for GitCreative, a browser-based painting application with Git-style version control.
 
-This is the backend service. It's designed to work with the [GitCreative frontend](#) (separate repository), but exposes a plain REST API that could be consumed by any client.
+This is the backend service. It's designed to work with the [GitCreative frontend](https://github.com/SergioSRcode/GitCreative-Backend) (separate repository), but exposes a plain REST API that could be consumed by any client.
 
 ---
 
