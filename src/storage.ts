@@ -1,9 +1,11 @@
 import { Client } from 'minio';
 
+const useSSL = process.env.MINIO_USE_SSL !== 'false'; // defaults to true, override for local dev
+
 export const minioClient = new Client({
   endPoint: process.env.MINIO_ENDPOINT || 'localhost',
   port: Number(process.env.MINIO_PORT) || 9000,
-  useSSL: false,
+  useSSL,
   accessKey: process.env.MINIO_ACCESS_KEY  || 'minioadmin',
   secretKey: process.env.MINIO_SECRET_KEY || 'minioadmin',
 });
@@ -12,6 +14,8 @@ export const BUCKET = process.env.MINIO_BUCKET || 'gitcreative-snapshots';
 
 // ensures the bucket exists on startup - creates one if missing
 export async function ensureBucket() {
+  if (process.env.NODE_ENV === 'production') return;  // no need to creat bucket locally, is created in prod via R2
+
   const exists = await minioClient.bucketExists(BUCKET);
   if (!exists) {
     await minioClient.makeBucket(BUCKET);
