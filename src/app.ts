@@ -6,7 +6,7 @@ import projectRoutes from './routes/projects'
 export function createApp() {
   const app = express();
 
-  app.use(cors({ origin: 'http://localhost:5173' }));
+  app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173' }));
 
   app.use(express.raw({
     type: 'application/octet-stream',
